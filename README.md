@@ -44,6 +44,7 @@ $link = $malipo->paymentLinks()->create([
 
 echo $link['data']['url'];        // https://malipo.one/pay/ABCD1234
 echo $link['data']['reference'];  // ABCD1234
+echo $link['data']['status'];     // pending | paid | expired | cancelled
 echo $link['data']['invoice_created']; // true
 
 // Open-amount donation link (stays open for multiple payments)
@@ -52,15 +53,28 @@ $link = $malipo->paymentLinks()->create([
     'payment_mode' => 'multiple',
 ]);
 
-// Retrieve a link by reference
+// Retrieve a link by reference — poll `status` (or use a `payment.success`
+// webhook) to confirm payment server-side. Do not treat a customer merely
+// reaching `success_url` as proof of payment; that redirect is not signed
+// or otherwise verifiable on its own.
 $link = $malipo->paymentLinks()->get('ABCD1234');
 ```
+
+The payer can cancel from the hosted page itself (there is no merchant
+cancel endpoint). Cancelling redirects them to `cancel_url` if you set one,
+sets `status` to `cancelled`, and closes the link.
 
 ---
 
 ## Payments (USSD Push)
 
-Send a payment prompt directly to a customer's phone:
+Send a payment prompt directly to a customer's phone. **CRDB has no
+USSD-push rail** — `operator: 'CRDB'` here will queue but never actually
+complete, because there's no PIN prompt for the customer to approve. For
+CRDB, use [Payment Links](#payment-links) instead: it gives the customer a
+hosted page with a reference to pay against on any CRDB channel (SimBanking,
+internet banking, agent, branch), and settles automatically once CRDB
+confirms it.
 
 ```php
 use Ramsey\Uuid\Uuid;
@@ -142,7 +156,7 @@ try {
 $malipo = new Client(
     clientId:     'your-client-id',
     clientSecret: 'your-client-secret',
-    baseUrl:      'http://localhost/malipo-one/public_html',
+    baseUrl:      'https://localhost/one/public_html',
 );
 ```
 

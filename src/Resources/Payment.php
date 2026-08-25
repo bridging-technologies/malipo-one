@@ -31,6 +31,11 @@ class Payment
      *
      * Requires a unique Idempotency-Key header per attempt.
      *
+     * CRDB has no USSD-push rail — a customer can't approve a CRDB payment
+     * this way. Use paymentLinks()->create() for CRDB instead: it gives you
+     * a hosted page showing the reference to pay against on any CRDB
+     * channel, and settles via callback once CRDB confirms it.
+     *
      * @param  array{
      *     amount: float|int,
      *     currency: string,
